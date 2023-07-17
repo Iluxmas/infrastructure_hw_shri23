@@ -4,7 +4,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  testing:
 
     runs-on: ubuntu-latest
 
@@ -22,6 +22,7 @@ jobs:
       run: npm run lint
 
     - name: Check PR status
+      id: check_status
       run: |
         if [[ ${{ job.status }} == "success" ]]; then
           echo "All checks passed!"
@@ -29,23 +30,3 @@ jobs:
           echo "Checks failed! Please fix the issues."
           exit 1
         fi
-
-    - name: Set merge restriction
-      uses: actions/github-script@v4
-      with:
-        github-token: ${{ secrets.GH_TOKEN }}
-        script: |
-          const { data: pullRequest } = await github.pulls.get({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            pull_number: context.issue.number
-          });
-          const { data: checks } = await github.checks.listForRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: pullRequest.head.sha
-          });
-          const failedChecks = checks.check_runs.filter(check => check.conclusion === 'failure');
-          if (failedChecks.length > 0) {
-            core.setFailed('Checks failed! Cannot merge changes.');
-          }
